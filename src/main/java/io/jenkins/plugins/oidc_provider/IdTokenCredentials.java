@@ -29,11 +29,18 @@ import com.cloudbees.plugins.credentials.CredentialsScope;
 import com.cloudbees.plugins.credentials.impl.BaseStandardCredentials;
 import edu.umd.cs.findbugs.annotations.CheckForNull;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import hudson.DescriptorExtensionList;
+import hudson.Extension;
 import hudson.ExtensionList;
 import hudson.Util;
+import hudson.model.Descriptor;
+import hudson.model.ModelObject;
 import hudson.model.Run;
 import hudson.util.FormValidation;
+import hudson.util.ListBoxModel;
+import hudson.util.ListBoxModel.Option;
 import hudson.util.Secret;
+import io.jenkins.plugins.oidc_provider.keys.KeyType;
 import io.jsonwebtoken.JwtBuilder;
 import io.jsonwebtoken.Jwts;
 import java.net.URI;
@@ -44,6 +51,7 @@ import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.interfaces.RSAPrivateCrtKey;
 import java.security.interfaces.RSAPublicKey;
+import java.security.spec.ECGenParameterSpec;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.RSAPublicKeySpec;
 import java.time.temporal.ChronoUnit;
@@ -82,6 +90,10 @@ public abstract class IdTokenCredentials extends BaseStandardCredentials {
 
     protected IdTokenCredentials(CredentialsScope scope, String id, String description) {
         this(scope, id, description, generatePrivateKey());
+    }
+
+    public DescriptorExtensionList<KeyType, Descriptor<KeyType>> getKeyTypeDescriptors(){
+        return Jenkins.get().getDescriptorList(KeyType.class);
     }
 
     private static KeyPair generatePrivateKey() {
@@ -254,6 +266,14 @@ public abstract class IdTokenCredentials extends BaseStandardCredentials {
             return new JSONObject().accumulate("keys", new JSONArray().element(Keys.key(c)));
         }
 
+        public ListBoxModel doFillKeyTypeItems(ModelObject context) {
+            return new ListBoxModel(
+                new Option("RSA")
+            );
+
+        }
     }
+
+    public static class KeyTypeDescriptor extends Descriptor<KeyType> {}
 
 }
