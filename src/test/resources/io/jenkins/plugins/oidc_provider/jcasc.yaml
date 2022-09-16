@@ -6,6 +6,8 @@ credentials:
           id: my-jwt-1
           scope: GLOBAL
           audience: wherever.net
+          algorithm: RS256
       - idTokenFile:
           id: my-jwt-2
           scope: GLOBAL
+          algorithm: RS256

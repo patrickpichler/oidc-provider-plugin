@@ -29,9 +29,11 @@ import com.cloudbees.plugins.credentials.CredentialsScope;
 import com.cloudbees.plugins.credentials.CredentialsStore;
 import com.cloudbees.plugins.credentials.domains.Domain;
 import com.gargoylesoftware.htmlunit.Page;
-import io.jenkins.plugins.oidc_provider.Keys.SupportedKeyAlgorithms;
-import io.jsonwebtoken.SignatureAlgorithm;
+import hudson.util.Secret;
+import io.jenkins.plugins.oidc_provider.Keys.SecretKeyPair;
+import io.jenkins.plugins.oidc_provider.Keys.SupportedKeyAlgorithm;
 import java.net.URL;
+import java.security.KeyPair;
 import java.util.logging.Level;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONArray;
@@ -53,8 +55,8 @@ public class KeysTest {
         r.jenkins.setAuthorizationStrategy(new MockAuthorizationStrategy().grant(Jenkins.ADMINISTER).everywhere().toAuthenticated());
         CredentialsStore store = CredentialsProvider.lookupStores(r.jenkins).iterator().next();
         store.addCredentials(Domain.global(), new IdTokenStringCredentials(CredentialsScope.GLOBAL, "global", null,
-            SupportedKeyAlgorithms.RS256));
-        IdTokenStringCredentials alt = new IdTokenStringCredentials(CredentialsScope.GLOBAL, "alt", null, SupportedKeyAlgorithms.RS256);
+            SupportedKeyAlgorithm.RS256));
+        IdTokenStringCredentials alt = new IdTokenStringCredentials(CredentialsScope.GLOBAL, "alt", null, SupportedKeyAlgorithm.RS256);
         alt.setIssuer("https://elsewhere");
         store.addCredentials(Domain.global(), alt);
         JSONObject config = r.getJSON("oidc/.well-known/openid-configuration").getJSONObject();
@@ -75,4 +77,14 @@ public class KeysTest {
         assertEquals("sig", key.getString("use"));
     }
 
+    @Test public void restoreECKeyPair() throws Exception {
+        SupportedKeyAlgorithm algorithm = SupportedKeyAlgorithm.ES512;
+        KeyPair kp = algorithm.generateKeyPair();
+
+        SecretKeyPair secretKeyPair = SecretKeyPair.fromKeyPair(algorithm, kp);
+        KeyPair parsedKp = secretKeyPair.toKeyPair();
+
+        assertArrayEquals(kp.getPrivate().getEncoded(), parsedKp.getPrivate().getEncoded());
+        assertArrayEquals(kp.getPublic().getEncoded(), parsedKp.getPublic().getEncoded());
+    }
 }

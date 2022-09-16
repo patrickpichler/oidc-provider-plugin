@@ -36,7 +36,8 @@ import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 import hudson.util.ListBoxModel.Option;
 import hudson.util.Secret;
-import io.jenkins.plugins.oidc_provider.Keys.SupportedKeyAlgorithms;
+import io.jenkins.plugins.oidc_provider.Keys.SecretKeyPair;
+import io.jenkins.plugins.oidc_provider.Keys.SupportedKeyAlgorithm;
 import io.jsonwebtoken.JwtBuilder;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -71,11 +72,13 @@ public abstract class IdTokenCredentials extends BaseStandardCredentials {
     private transient KeyPair kp;
 
     /**
-     * Encrypted {@link Base64} encoding of RSA private key in {@link RSAPrivateCrtKey} / {@link PKCS8EncodedKeySpec}
+     * Encrypted {@link Base64} encoding of private key in {@link RSAPrivateCrtKey} / {@link PKCS8EncodedKeySpec}
      * format.
      * The public key is inferred from this to reload {@link #kp}.
      */
-    private final Secret privateKey;
+    private transient Secret privateKey;
+
+    private final SecretKeyPair secretKeyPair;
 
     private @CheckForNull String issuer;
 
@@ -83,36 +86,41 @@ public abstract class IdTokenCredentials extends BaseStandardCredentials {
 
     private transient @CheckForNull Run<?, ?> build;
 
-    private @CheckForNull SupportedKeyAlgorithms algorithm;
+    private @CheckForNull SupportedKeyAlgorithm algorithm;
 
-    protected IdTokenCredentials(CredentialsScope scope, String id, String description, SupportedKeyAlgorithms algorithm) {
+    protected IdTokenCredentials(CredentialsScope scope, String id, String description,
+        SupportedKeyAlgorithm algorithm) {
         this(scope, id, description, algorithm.generateKeyPair(), algorithm);
     }
 
-    private IdTokenCredentials(CredentialsScope scope, String id, String description, KeyPair kp, SupportedKeyAlgorithms algorithm) {
-        this(scope, id, description, kp, serializePrivateKey(kp), algorithm);
+    private IdTokenCredentials(CredentialsScope scope, String id, String description, KeyPair kp,
+        SupportedKeyAlgorithm algorithm) {
+        this(scope, id, description, kp, algorithm, Keys.SecretKeyPair.fromKeyPair(algorithm, kp));
     }
 
-    private static Secret serializePrivateKey(KeyPair kp) {
-        assert ((RSAPublicKey) kp.getPublic()).getModulus().equals(((RSAPrivateCrtKey) kp.getPrivate()).getModulus());
-        return Secret.fromString(Base64.getEncoder().encodeToString(kp.getPrivate().getEncoded()));
-    }
-
-    protected IdTokenCredentials(CredentialsScope scope, String id, String description, KeyPair kp, Secret privateKey,
-        SupportedKeyAlgorithms algorithm) {
+    protected IdTokenCredentials(CredentialsScope scope, String id, String description, KeyPair kp,
+        SupportedKeyAlgorithm algorithm, SecretKeyPair secretKeyPair) {
         super(scope, id, description);
         this.kp = kp;
-        this.privateKey = privateKey;
         this.algorithm = algorithm;
+        this.secretKeyPair = secretKeyPair;
     }
 
     protected Object readResolve() throws Exception {
-        KeyFactory kf = KeyFactory.getInstance("RSA");
+        if (privateKey != null) {
+            KeyFactory kf = KeyFactory.getInstance("RSA");
 
-        RSAPrivateCrtKey priv = (RSAPrivateCrtKey) kf.generatePrivate(
-            new PKCS8EncodedKeySpec(Base64.getDecoder().decode(privateKey.getPlainText())));
-        kp = new KeyPair(kf.generatePublic(new RSAPublicKeySpec(priv.getModulus(), priv.getPublicExponent())), priv);
-        algorithm = SupportedKeyAlgorithms.RS256;
+            RSAPrivateCrtKey priv = (RSAPrivateCrtKey) kf.generatePrivate(
+                new PKCS8EncodedKeySpec(Base64.getDecoder().decode(privateKey.getPlainText())));
+            kp = new KeyPair(kf.generatePublic(new RSAPublicKeySpec(priv.getModulus(), priv.getPublicExponent())),
+                priv);
+            algorithm = SupportedKeyAlgorithm.RS256;
+
+            return this;
+        }
+
+        kp = secretKeyPair.toKeyPair();
+
         return this;
     }
 
@@ -128,22 +136,25 @@ public abstract class IdTokenCredentials extends BaseStandardCredentials {
         return audience;
     }
 
-    @DataBoundSetter public final void setAudience(String audience) {
+    @DataBoundSetter
+    public final void setAudience(String audience) {
         this.audience = Util.fixEmpty(audience);
     }
 
-    @DataBoundSetter public void setAlgorithm(SupportedKeyAlgorithms algorithm) {
+    @DataBoundSetter
+    public void setAlgorithm(SupportedKeyAlgorithm algorithm) {
         this.algorithm = algorithm;
     }
 
-    public SupportedKeyAlgorithms getAlgorithm() {
+    public SupportedKeyAlgorithm getAlgorithm() {
         return algorithm;
     }
 
-    protected abstract IdTokenCredentials clone(KeyPair kp, Secret privateKey, SupportedKeyAlgorithms algorithm);
+    protected abstract IdTokenCredentials clone(KeyPair kp, SupportedKeyAlgorithm algorithm, SecretKeyPair secretKeyPair);
 
-    @Override public final Credentials forRun(Run<?, ?> context) {
-        IdTokenCredentials clone = clone(kp, privateKey, algorithm);
+    @Override
+    public final Credentials forRun(Run<?, ?> context) {
+        IdTokenCredentials clone = clone(kp, algorithm, secretKeyPair);
         clone.issuer = issuer;
         clone.audience = audience;
         clone.build = context;
@@ -272,4 +283,5 @@ public abstract class IdTokenCredentials extends BaseStandardCredentials {
             );
         }
     }
+
 }

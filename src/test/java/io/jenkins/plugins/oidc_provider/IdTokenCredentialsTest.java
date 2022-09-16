@@ -38,7 +38,7 @@ import com.cloudbees.plugins.credentials.domains.Domain;
 import com.gargoylesoftware.htmlunit.html.HtmlAnchor;
 import com.gargoylesoftware.htmlunit.html.HtmlForm;
 import com.gargoylesoftware.htmlunit.html.HtmlPage;
-import io.jenkins.plugins.oidc_provider.Keys.SupportedKeyAlgorithms;
+import io.jenkins.plugins.oidc_provider.Keys.SupportedKeyAlgorithm;
 import java.math.BigInteger;
 import java.util.Collections;
 import java.util.List;
@@ -58,7 +58,7 @@ public class IdTokenCredentialsTest {
         AtomicReference<BigInteger> modulus = new AtomicReference<>();
         rr.then(r -> {
             IdTokenStringCredentials c = new IdTokenStringCredentials(CredentialsScope.GLOBAL, "test", null,
-                SupportedKeyAlgorithms.RS256);
+                SupportedKeyAlgorithm.RS256);
             c.setIssuer("https://issuer");
             c.setAudience("https://audience");
             CredentialsProvider.lookupStores(r.jenkins).iterator().next().addCredentials(Domain.global(), c);
@@ -90,11 +90,11 @@ public class IdTokenCredentialsTest {
 
     @Test public void checkIssuer() throws Throwable {
         rr.then(r -> {
-            IdTokenStringCredentials c = new IdTokenStringCredentials(CredentialsScope.GLOBAL, "ext1", null, SupportedKeyAlgorithms.RS256);
+            IdTokenStringCredentials c = new IdTokenStringCredentials(CredentialsScope.GLOBAL, "ext1", null, SupportedKeyAlgorithm.RS256);
             c.setIssuer("https://xxx");
             CredentialsProvider.lookupStores(r.jenkins).iterator().next().addCredentials(Domain.global(), c);
             Folder dir = r.createProject(Folder.class, "dir");
-            c = new IdTokenStringCredentials(CredentialsScope.GLOBAL, "ext2", null, SupportedKeyAlgorithms.RS256);
+            c = new IdTokenStringCredentials(CredentialsScope.GLOBAL, "ext2", null, SupportedKeyAlgorithm.RS256);
             c.setIssuer("https://xxx");
             CredentialsProvider.lookupStores(dir).iterator().next().addCredentials(Domain.global(), c);
             r.jenkins.setSecurityRealm(r.createDummySecurityRealm());

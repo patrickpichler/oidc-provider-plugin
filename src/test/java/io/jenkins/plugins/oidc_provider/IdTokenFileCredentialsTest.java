@@ -28,10 +28,9 @@ import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.CredentialsScope;
 import com.cloudbees.plugins.credentials.domains.Domain;
 import hudson.slaves.DumbSlave;
-import io.jenkins.plugins.oidc_provider.Keys.SupportedKeyAlgorithms;
+import io.jenkins.plugins.oidc_provider.Keys.SupportedKeyAlgorithm;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
@@ -50,7 +49,7 @@ public class IdTokenFileCredentialsTest {
     @Rule public JenkinsRule r = new JenkinsRule();
 
     @Test public void smokes() throws Exception {
-        IdTokenFileCredentials c = new IdTokenFileCredentials(CredentialsScope.GLOBAL, "test", null, SupportedKeyAlgorithms.RS256);
+        IdTokenFileCredentials c = new IdTokenFileCredentials(CredentialsScope.GLOBAL, "test", null, SupportedKeyAlgorithm.RS256);
         c.setAudience("https://service/");
         CredentialsProvider.lookupStores(r.jenkins).iterator().next().addCredentials(Domain.global(), c);
         r.createSlave("remote", null, null);
@@ -77,7 +76,7 @@ public class IdTokenFileCredentialsTest {
     }
 
     @Test public void declarative() throws Exception {
-        IdTokenFileCredentials c = new IdTokenFileCredentials(CredentialsScope.GLOBAL, "test", null, SupportedKeyAlgorithms.RS256);
+        IdTokenFileCredentials c = new IdTokenFileCredentials(CredentialsScope.GLOBAL, "test", null, SupportedKeyAlgorithm.RS256);
         c.setAudience("https://service/");
         CredentialsProvider.lookupStores(r.jenkins).iterator().next().addCredentials(Domain.global(), c);
         DumbSlave s = r.createSlave("remote", null, null);

@@ -27,7 +27,8 @@ package io.jenkins.plugins.oidc_provider;
 import com.cloudbees.plugins.credentials.CredentialsScope;
 import hudson.Extension;
 import hudson.util.Secret;
-import io.jenkins.plugins.oidc_provider.Keys.SupportedKeyAlgorithms;
+import io.jenkins.plugins.oidc_provider.Keys.SecretKeyPair;
+import io.jenkins.plugins.oidc_provider.Keys.SupportedKeyAlgorithm;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -44,12 +45,12 @@ public final class IdTokenFileCredentials extends IdTokenCredentials implements 
 
     private static final long serialVersionUID = 1;
 
-    @DataBoundConstructor public IdTokenFileCredentials(CredentialsScope scope, String id, String description, SupportedKeyAlgorithms algorithm) {
+    @DataBoundConstructor public IdTokenFileCredentials(CredentialsScope scope, String id, String description, SupportedKeyAlgorithm algorithm) {
         super(scope, id, description, algorithm);
     }
 
-    private IdTokenFileCredentials(CredentialsScope scope, String id, String description, KeyPair kp, Secret privateKey, SupportedKeyAlgorithms algorithm) {
-        super(scope, id, description, kp, privateKey, algorithm);
+    private IdTokenFileCredentials(CredentialsScope scope, String id, String description, KeyPair kp, SupportedKeyAlgorithm algorithm, SecretKeyPair secretKeyPair) {
+        super(scope, id, description, kp, algorithm, secretKeyPair);
     }
 
     @Override public String getFileName() {
@@ -60,8 +61,8 @@ public final class IdTokenFileCredentials extends IdTokenCredentials implements 
         return new ByteArrayInputStream(token().getBytes(StandardCharsets.UTF_8));
     }
 
-    @Override protected IdTokenCredentials clone(KeyPair kp, Secret privateKey, SupportedKeyAlgorithms algorithm) {
-        return new IdTokenFileCredentials(getScope(), getId(), getDescription(), kp, privateKey, algorithm);
+    @Override protected IdTokenCredentials clone(KeyPair kp, SupportedKeyAlgorithm algorithm, SecretKeyPair secretKeyPair) {
+        return new IdTokenFileCredentials(getScope(), getId(), getDescription(), kp, algorithm, secretKeyPair);
     }
 
     @Symbol("idTokenFile")

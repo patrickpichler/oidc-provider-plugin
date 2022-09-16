@@ -26,12 +26,11 @@ package io.jenkins.plugins.oidc_provider;
 
 import com.cloudbees.plugins.credentials.CredentialsScope;
 import hudson.Extension;
-import hudson.model.ModelObject;
-import hudson.util.ListBoxModel;
-import hudson.util.ListBoxModel.Option;
 import hudson.util.Secret;
-import io.jenkins.plugins.oidc_provider.Keys.SupportedKeyAlgorithms;
+import io.jenkins.plugins.oidc_provider.Keys.SecretKeyPair;
+import io.jenkins.plugins.oidc_provider.Keys.SupportedKeyAlgorithm;
 import java.security.KeyPair;
+import javax.crypto.SecretKey;
 import org.jenkinsci.Symbol;
 import org.jenkinsci.plugins.plaincredentials.StringCredentials;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -43,20 +42,20 @@ public final class IdTokenStringCredentials extends IdTokenCredentials implement
 
     private static final long serialVersionUID = 1;
 
-    @DataBoundConstructor public IdTokenStringCredentials(CredentialsScope scope, String id, String description, SupportedKeyAlgorithms algorithm) {
+    @DataBoundConstructor public IdTokenStringCredentials(CredentialsScope scope, String id, String description, SupportedKeyAlgorithm algorithm) {
         super(scope, id, description, algorithm);
     }
 
-    private IdTokenStringCredentials(CredentialsScope scope, String id, String description, KeyPair kp, Secret privateKey, SupportedKeyAlgorithms algorithm) {
-        super(scope, id, description, kp, privateKey, algorithm);
+    private IdTokenStringCredentials(CredentialsScope scope, String id, String description, KeyPair kp,  SupportedKeyAlgorithm algorithm, SecretKeyPair secretKeyPair) {
+        super(scope, id, description, kp,  algorithm, secretKeyPair);
     }
 
     @Override public Secret getSecret() {
         return Secret.fromString(token());
     }
 
-    @Override protected IdTokenCredentials clone(KeyPair kp, Secret privateKey, SupportedKeyAlgorithms algorithm) {
-        return new IdTokenStringCredentials(getScope(), getId(), getDescription(), kp, privateKey, algorithm);
+    @Override protected IdTokenCredentials clone(KeyPair kp, SupportedKeyAlgorithm algorithm, SecretKeyPair secretKeyPair) {
+        return new IdTokenStringCredentials(getScope(), getId(), getDescription(), kp, algorithm, secretKeyPair);
     }
 
     @Symbol("idToken")

@@ -31,9 +31,20 @@ import hudson.model.InvisibleAction;
 import hudson.model.UnprotectedRootAction;
 import hudson.security.ACL;
 import hudson.security.ACLContext;
+import hudson.util.Secret;
 import io.jsonwebtoken.SignatureAlgorithm;
+import java.io.Serializable;
+import java.security.KeyFactory;
 import java.security.KeyPair;
+import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.security.interfaces.ECPrivateKey;
+import java.security.interfaces.RSAPrivateCrtKey;
 import java.security.interfaces.RSAPublicKey;
+import java.security.spec.ECPublicKeySpec;
+import java.security.spec.PKCS8EncodedKeySpec;
+import java.security.spec.RSAPublicKeySpec;
+import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
 import java.util.logging.Logger;
 import net.sf.json.JSONArray;
@@ -53,6 +64,10 @@ import org.kohsuke.stapler.StaplerRequest;
     static final String URL_NAME = "oidc";
     static final String WELL_KNOWN_OPENID_CONFIGURATION = "/.well-known/openid-configuration";
     static final String JWKS = "/jwks";
+
+    public static Secret serializePrivateKey(KeyPair kp) {
+        return Secret.fromString(Base64.getEncoder().encodeToString(kp.getPrivate().getEncoded()));
+    }
 
     @Override public String getUrlName() {
         return URL_NAME;
@@ -134,7 +149,7 @@ import org.kohsuke.stapler.StaplerRequest;
         return null;
     }
 
-    public static enum SupportedKeyAlgorithms {
+    public static enum SupportedKeyAlgorithm {
         ES256(SignatureAlgorithm.ES256),
         ES384(SignatureAlgorithm.ES384),
         ES512(SignatureAlgorithm.ES512),
@@ -144,10 +159,59 @@ import org.kohsuke.stapler.StaplerRequest;
 
         private final SignatureAlgorithm algorithm;
 
-        SupportedKeyAlgorithms(SignatureAlgorithm algorithm) {this.algorithm = algorithm;}
+        SupportedKeyAlgorithm(SignatureAlgorithm algorithm) {this.algorithm = algorithm;}
 
         public KeyPair generateKeyPair() {
             return io.jsonwebtoken.security.Keys.keyPairFor(algorithm);
         }
+
+        public boolean isRsa() {
+            return algorithm.isRsa();
+        }
+
+        public boolean isEllipticCurve() {
+            return algorithm.isEllipticCurve();
+        }
+    }
+
+    public static class SecretKeyPair implements Serializable {
+        private static final long serialVersionUID = 2448941858110252020L;
+        private final Secret privateKey;
+        private final Secret publicKey;
+        private final SupportedKeyAlgorithm algorithm;
+
+        private SecretKeyPair(SupportedKeyAlgorithm algorithm, byte[] privateKey, byte[] publicKey) {
+            this.privateKey = Secret.fromString(Base64.getEncoder().encodeToString(privateKey));
+            this.publicKey = Secret.fromString(Base64.getEncoder().encodeToString(publicKey));
+            this.algorithm = algorithm;
+        }
+
+        public KeyPair toKeyPair() throws Exception {
+            if (this.algorithm.isRsa()) {
+                KeyFactory kf = KeyFactory.getInstance("RSA");
+
+                RSAPrivateCrtKey priv = (RSAPrivateCrtKey) kf.generatePrivate(
+                    new PKCS8EncodedKeySpec(Base64.getDecoder().decode(privateKey.getPlainText())));
+                return new KeyPair(kf.generatePublic(new RSAPublicKeySpec(priv.getModulus(), priv.getPublicExponent())),
+                    priv);
+            } else if (this.algorithm.isEllipticCurve()){
+                KeyFactory kf = KeyFactory.getInstance("EC");
+
+                PrivateKey priv = kf.generatePrivate(
+                    new PKCS8EncodedKeySpec(Base64.getDecoder().decode(privateKey.getPlainText())));
+
+                PublicKey pub = kf.generatePublic(
+                    new X509EncodedKeySpec(Base64.getDecoder().decode(publicKey.getPlainText())));
+
+                return new KeyPair(pub, priv);
+            }
+
+            throw new RuntimeException("Cannot restore keypair from " + this.algorithm.name() + " algorithm");
+        }
+
+        public static SecretKeyPair fromKeyPair(SupportedKeyAlgorithm algorithm, KeyPair keyPair) {
+            return new SecretKeyPair(algorithm, keyPair.getPrivate().getEncoded(), keyPair.getPublic().getEncoded());
+        }
+
     }
 }

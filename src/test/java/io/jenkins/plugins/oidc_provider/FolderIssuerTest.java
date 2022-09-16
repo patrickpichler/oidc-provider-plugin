@@ -35,7 +35,7 @@ import hudson.model.ParametersAction;
 import hudson.model.ParametersDefinitionProperty;
 import hudson.model.StringParameterDefinition;
 import hudson.model.StringParameterValue;
-import io.jenkins.plugins.oidc_provider.Keys.SupportedKeyAlgorithms;
+import io.jenkins.plugins.oidc_provider.Keys.SupportedKeyAlgorithm;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import java.net.URL;
@@ -63,9 +63,9 @@ public class FolderIssuerTest {
 
     @Test public void folderEndpoint() throws Exception {
         CredentialsProvider.lookupStores(r.jenkins).iterator().next().addCredentials(Domain.global(), new IdTokenStringCredentials(CredentialsScope.GLOBAL, "global", null,
-            SupportedKeyAlgorithms.RS256));
+            SupportedKeyAlgorithm.RS256));
         Folder middle = r.jenkins.createProject(Folder.class, "top").createProject(Folder.class, "middle");
-        CredentialsProvider.lookupStores(middle).iterator().next().addCredentials(Domain.global(), new IdTokenStringCredentials(CredentialsScope.GLOBAL, "team", null, SupportedKeyAlgorithms.RS256));
+        CredentialsProvider.lookupStores(middle).iterator().next().addCredentials(Domain.global(), new IdTokenStringCredentials(CredentialsScope.GLOBAL, "team", null, SupportedKeyAlgorithm.RS256));
         middle.createProject(Folder.class, "bottom");
         r.jenkins.setSecurityRealm(r.createDummySecurityRealm());
         r.jenkins.setAuthorizationStrategy(new MockAuthorizationStrategy().grant(Jenkins.ADMINISTER).everywhere().toAuthenticated());
@@ -86,13 +86,13 @@ public class FolderIssuerTest {
     }
 
     @Test public void build() throws Exception {
-        IdTokenStringCredentials global = new IdTokenStringCredentials(CredentialsScope.GLOBAL, "global", null, SupportedKeyAlgorithms.RS256);
+        IdTokenStringCredentials global = new IdTokenStringCredentials(CredentialsScope.GLOBAL, "global", null, SupportedKeyAlgorithm.RS256);
         global.setAudience("https://global/");
         CredentialsProvider.lookupStores(r.jenkins).iterator().next().addCredentials(Domain.global(), global);
         Folder top = r.jenkins.createProject(Folder.class, "top");
-        CredentialsProvider.lookupStores(top).iterator().next().addCredentials(Domain.global(), new IdTokenStringCredentials(CredentialsScope.GLOBAL, "team", null, SupportedKeyAlgorithms.RS256)); // overridden, ignored
+        CredentialsProvider.lookupStores(top).iterator().next().addCredentials(Domain.global(), new IdTokenStringCredentials(CredentialsScope.GLOBAL, "team", null, SupportedKeyAlgorithm.RS256)); // overridden, ignored
         Folder middle = top.createProject(Folder.class, "middle");
-        IdTokenStringCredentials team = new IdTokenStringCredentials(CredentialsScope.GLOBAL, "team", null, SupportedKeyAlgorithms.RS256);
+        IdTokenStringCredentials team = new IdTokenStringCredentials(CredentialsScope.GLOBAL, "team", null, SupportedKeyAlgorithm.RS256);
         team.setAudience("https://local/");
         CredentialsProvider.lookupStores(middle).iterator().next().addCredentials(Domain.global(), team);
         Folder bottom = middle.createProject(Folder.class, "bottom");

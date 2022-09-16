@@ -27,10 +27,9 @@ package io.jenkins.plugins.oidc_provider;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.CredentialsScope;
 import com.cloudbees.plugins.credentials.domains.Domain;
-import io.jenkins.plugins.oidc_provider.Keys.SupportedKeyAlgorithms;
+import io.jenkins.plugins.oidc_provider.Keys.SupportedKeyAlgorithm;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
@@ -50,7 +49,7 @@ public class IdTokenStringCredentialsTest {
 
     @Test public void smokes() throws Exception {
         IdTokenStringCredentials c = new IdTokenStringCredentials(CredentialsScope.GLOBAL, "test", null,
-            SupportedKeyAlgorithms.RS256);
+            SupportedKeyAlgorithm.RS256);
         c.setAudience("https://service/");
         CredentialsProvider.lookupStores(r.jenkins).iterator().next().addCredentials(Domain.global(), c);
         WorkflowJob p = r.createProject(WorkflowJob.class, "p");
@@ -75,7 +74,7 @@ public class IdTokenStringCredentialsTest {
     }
 
     @Test public void declarative() throws Exception {
-        IdTokenStringCredentials c = new IdTokenStringCredentials(CredentialsScope.GLOBAL, "test", null, SupportedKeyAlgorithms.RS256);
+        IdTokenStringCredentials c = new IdTokenStringCredentials(CredentialsScope.GLOBAL, "test", null, SupportedKeyAlgorithm.RS256);
         c.setAudience("https://service/");
         CredentialsProvider.lookupStores(r.jenkins).iterator().next().addCredentials(Domain.global(), c);
         WorkflowJob p = r.createProject(WorkflowJob.class, "p");
@@ -104,7 +103,7 @@ public class IdTokenStringCredentialsTest {
     }
 
     @Test public void alternateIssuer() throws Exception {
-        IdTokenStringCredentials c = new IdTokenStringCredentials(CredentialsScope.GLOBAL, "test", null, SupportedKeyAlgorithms.RS256);
+        IdTokenStringCredentials c = new IdTokenStringCredentials(CredentialsScope.GLOBAL, "test", null, SupportedKeyAlgorithm.RS256);
         c.setIssuer("https://some.issuer");
         CredentialsProvider.lookupStores(r.jenkins).iterator().next().addCredentials(Domain.global(), c);
         WorkflowJob p = r.createProject(WorkflowJob.class, "p");
