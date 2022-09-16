@@ -45,6 +45,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.KeyFactory;
 import java.security.KeyPair;
+import java.security.PublicKey;
 import java.security.interfaces.RSAPrivateCrtKey;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.PKCS8EncodedKeySpec;
@@ -107,6 +108,8 @@ public abstract class IdTokenCredentials extends BaseStandardCredentials {
     }
 
     protected Object readResolve() throws Exception {
+        // the private key should only be set for old versions of the credentials
+        // back then, only RSA256 ws supported and this block is handling the conversion
         if (privateKey != null) {
             KeyFactory kf = KeyFactory.getInstance("RSA");
 
@@ -161,8 +164,8 @@ public abstract class IdTokenCredentials extends BaseStandardCredentials {
         return clone;
     }
 
-    RSAPublicKey publicKey() {
-        return (RSAPublicKey) kp.getPublic();
+    PublicKey publicKey() {
+        return kp.getPublic();
     }
 
     protected final @NonNull String token() {

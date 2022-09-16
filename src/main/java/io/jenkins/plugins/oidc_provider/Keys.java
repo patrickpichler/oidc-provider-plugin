@@ -38,14 +38,14 @@ import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.security.PublicKey;
-import java.security.interfaces.ECPrivateKey;
+import java.security.interfaces.ECPublicKey;
 import java.security.interfaces.RSAPrivateCrtKey;
 import java.security.interfaces.RSAPublicKey;
-import java.security.spec.ECPublicKeySpec;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.RSAPublicKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
+import java.util.Base64.Encoder;
 import java.util.logging.Logger;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
@@ -100,6 +100,7 @@ import org.kohsuke.stapler.StaplerRequest;
     }
 
     static JSONObject openidConfiguration(String issuer) {
+        // TODO search for matching IdTokenCredential to display correct signing alg values
         return new JSONObject().
             accumulate("issuer", issuer).
             accumulate("jwks_uri", issuer + JWKS).
@@ -111,15 +112,17 @@ import org.kohsuke.stapler.StaplerRequest;
     }
 
     static JSONObject key(IdTokenCredentials creds) {
-        RSAPublicKey key = creds.publicKey();
-        Base64.Encoder encoder = Base64.getUrlEncoder().withoutPadding();
-        return new JSONObject().
-            accumulate("kid", creds.getId()).
-            accumulate("kty", "RSA").
-            accumulate("alg", "RS256").
-            accumulate("use", "sig").
-            accumulate("n", encoder.encodeToString(key.getModulus().toByteArray())).
-            accumulate("e", encoder.encodeToString(key.getPublicExponent().toByteArray()));
+        SupportedKeyAlgorithm algorithm = creds.getAlgorithm();
+
+        if (algorithm.isRsa()) {
+            return encodeRsaJsonWebKey(algorithm, creds.getId(), (RSAPublicKey) creds.publicKey());
+        }
+
+        if (algorithm.isEllipticCurve()) {
+            return encodeECJsonWebKey(algorithm, creds.getId(), (ECPublicKey) creds.publicKey());
+        }
+
+        throw new IllegalArgumentException("Cannot encode creds with algorithm " + algorithm.name());
     }
 
     /**
@@ -138,7 +141,8 @@ import org.kohsuke.stapler.StaplerRequest;
                         return null;
                     }
                     if (i.credentials().stream().noneMatch(c -> c.getIssuer() == null)) {
-                        LOGGER.fine(() -> "found " + i + " but has no credentials with default issuer; not advertising existence of a folder");
+                        LOGGER.fine(() -> "found " + i
+                            + " but has no credentials with default issuer; not advertising existence of a folder");
                         return null;
                     }
                     LOGGER.fine(() -> "found " + i);
@@ -149,17 +153,52 @@ import org.kohsuke.stapler.StaplerRequest;
         return null;
     }
 
+    public static JSONObject encodeECJsonWebKey(SupportedKeyAlgorithm algorithm, String keyId, ECPublicKey publicKey) {
+        Encoder encoder = Base64.getEncoder();
+
+        String x = encoder.encodeToString(publicKey.getW().getAffineX().toByteArray());
+        String y = encoder.encodeToString(publicKey.getW().getAffineY().toByteArray());
+
+        return new JSONObject()
+            .accumulate("alg", algorithm.name())
+            .accumulate("kty", "EC")
+            .accumulate("use", "sig")
+            .accumulate("kid", keyId)
+            .accumulate("crv", algorithm.curve)
+            .accumulate("x", x)
+            .accumulate("y", y);
+    }
+
+    public static JSONObject encodeRsaJsonWebKey(SupportedKeyAlgorithm algorithm, String keyId, RSAPublicKey key) {
+        Base64.Encoder encoder = Base64.getUrlEncoder().withoutPadding();
+        return new JSONObject().
+            accumulate("kid", keyId).
+            accumulate("kty", "RSA").
+            accumulate("alg", "RS256").
+            accumulate("use", "sig").
+            accumulate("n", encoder.encodeToString(key.getModulus().toByteArray())).
+            accumulate("e", encoder.encodeToString(key.getPublicExponent().toByteArray()));
+    }
+
     public static enum SupportedKeyAlgorithm {
-        ES256(SignatureAlgorithm.ES256),
-        ES384(SignatureAlgorithm.ES384),
-        ES512(SignatureAlgorithm.ES512),
+        ES256(SignatureAlgorithm.ES256, "P-256"),
+        ES384(SignatureAlgorithm.ES384, "P-384"),
+        ES512(SignatureAlgorithm.ES512, "P-521"),
         RS256(SignatureAlgorithm.RS256),
         RS384(SignatureAlgorithm.RS384),
         RS512(SignatureAlgorithm.RS512);
 
         private final SignatureAlgorithm algorithm;
+        private final String curve;
 
-        SupportedKeyAlgorithm(SignatureAlgorithm algorithm) {this.algorithm = algorithm;}
+        SupportedKeyAlgorithm(SignatureAlgorithm algorithm) {
+            this(algorithm, null);
+        }
+
+        SupportedKeyAlgorithm(SignatureAlgorithm algorithm, String curve) {
+            this.algorithm = algorithm;
+            this.curve = curve;
+        }
 
         public KeyPair generateKeyPair() {
             return io.jsonwebtoken.security.Keys.keyPairFor(algorithm);

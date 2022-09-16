@@ -40,6 +40,8 @@ import com.gargoylesoftware.htmlunit.html.HtmlForm;
 import com.gargoylesoftware.htmlunit.html.HtmlPage;
 import io.jenkins.plugins.oidc_provider.Keys.SupportedKeyAlgorithm;
 import java.math.BigInteger;
+import java.security.interfaces.RSAPublicKey;
+import java.security.spec.RSAPublicKeySpec;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
@@ -62,7 +64,7 @@ public class IdTokenCredentialsTest {
             c.setIssuer("https://issuer");
             c.setAudience("https://audience");
             CredentialsProvider.lookupStores(r.jenkins).iterator().next().addCredentials(Domain.global(), c);
-            modulus.set(c.publicKey().getModulus());
+            modulus.set(((RSAPublicKey)c.publicKey()).getModulus());
         });
         rr.then(r -> {
             List<IdTokenStringCredentials> creds = CredentialsProvider.lookupCredentials(IdTokenStringCredentials.class, r.jenkins, null, Collections.emptyList());
@@ -70,14 +72,14 @@ public class IdTokenCredentialsTest {
             assertThat(creds.get(0).getId(), is("test"));
             assertThat(creds.get(0).getIssuer(), is("https://issuer"));
             assertThat(creds.get(0).getAudience(), is("https://audience"));
-            assertThat("private key retained by serialization", creds.get(0).publicKey().getModulus(), is(modulus.get()));
+            assertThat("private key retained by serialization", ((RSAPublicKey)creds.get(0).publicKey()).getModulus(), is(modulus.get()));
             HtmlForm form = r.createWebClient().goTo("credentials/store/system/domain/_/credential/test/update").getFormByName("update");
             form.getInputByName("_.description").setValueAttribute("my creds");
             r.submit(form);
             creds = CredentialsProvider.lookupCredentials(IdTokenStringCredentials.class, r.jenkins, null, Collections.emptyList());
             assertThat(creds, hasSize(1));
             assertThat(creds.get(0).getDescription(), is("my creds"));
-            assertThat("private key rotated by resaving", creds.get(0).publicKey().getModulus(), is(not(modulus.get())));
+            assertThat("private key rotated by resaving", ((RSAPublicKey)creds.get(0).publicKey()).getModulus(), is(not(modulus.get())));
             creds.get(0).setIssuer(null);
             creds.get(0).setAudience(null);
             r.submit(r.createWebClient().goTo("credentials/store/system/domain/_/credential/test/update").getFormByName("update"));
