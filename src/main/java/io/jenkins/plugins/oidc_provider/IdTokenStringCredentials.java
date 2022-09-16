@@ -30,6 +30,7 @@ import hudson.model.ModelObject;
 import hudson.util.ListBoxModel;
 import hudson.util.ListBoxModel.Option;
 import hudson.util.Secret;
+import io.jenkins.plugins.oidc_provider.Keys.SupportedKeyAlgorithms;
 import java.security.KeyPair;
 import org.jenkinsci.Symbol;
 import org.jenkinsci.plugins.plaincredentials.StringCredentials;
@@ -42,11 +43,11 @@ public final class IdTokenStringCredentials extends IdTokenCredentials implement
 
     private static final long serialVersionUID = 1;
 
-    @DataBoundConstructor public IdTokenStringCredentials(CredentialsScope scope, String id, String description, String algorithm) {
+    @DataBoundConstructor public IdTokenStringCredentials(CredentialsScope scope, String id, String description, SupportedKeyAlgorithms algorithm) {
         super(scope, id, description, algorithm);
     }
 
-    private IdTokenStringCredentials(CredentialsScope scope, String id, String description, KeyPair kp, Secret privateKey, String algorithm) {
+    private IdTokenStringCredentials(CredentialsScope scope, String id, String description, KeyPair kp, Secret privateKey, SupportedKeyAlgorithms algorithm) {
         super(scope, id, description, kp, privateKey, algorithm);
     }
 
@@ -54,7 +55,7 @@ public final class IdTokenStringCredentials extends IdTokenCredentials implement
         return Secret.fromString(token());
     }
 
-    @Override protected IdTokenCredentials clone(KeyPair kp, Secret privateKey, String algorithm) {
+    @Override protected IdTokenCredentials clone(KeyPair kp, Secret privateKey, SupportedKeyAlgorithms algorithm) {
         return new IdTokenStringCredentials(getScope(), getId(), getDescription(), kp, privateKey, algorithm);
     }
 

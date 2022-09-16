@@ -32,6 +32,7 @@ import hudson.model.UnprotectedRootAction;
 import hudson.security.ACL;
 import hudson.security.ACLContext;
 import io.jsonwebtoken.SignatureAlgorithm;
+import java.security.KeyPair;
 import java.security.interfaces.RSAPublicKey;
 import java.util.Base64;
 import java.util.logging.Logger;
@@ -144,5 +145,9 @@ import org.kohsuke.stapler.StaplerRequest;
         private final SignatureAlgorithm algorithm;
 
         SupportedKeyAlgorithms(SignatureAlgorithm algorithm) {this.algorithm = algorithm;}
+
+        public KeyPair generateKeyPair() {
+            return io.jsonwebtoken.security.Keys.keyPairFor(algorithm);
+        }
     }
 }

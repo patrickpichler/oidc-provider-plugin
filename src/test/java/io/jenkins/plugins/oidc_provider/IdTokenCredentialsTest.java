@@ -24,6 +24,13 @@
 
 package io.jenkins.plugins.oidc_provider;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.nullValue;
+
 import com.cloudbees.hudson.plugins.folder.Folder;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.CredentialsScope;
@@ -31,16 +38,14 @@ import com.cloudbees.plugins.credentials.domains.Domain;
 import com.gargoylesoftware.htmlunit.html.HtmlAnchor;
 import com.gargoylesoftware.htmlunit.html.HtmlForm;
 import com.gargoylesoftware.htmlunit.html.HtmlPage;
-import io.jsonwebtoken.SignatureAlgorithm;
+import io.jenkins.plugins.oidc_provider.Keys.SupportedKeyAlgorithms;
 import java.math.BigInteger;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import jenkins.model.Jenkins;
-import org.junit.Test;
-import static org.hamcrest.Matchers.*;
-import static org.hamcrest.MatcherAssert.assertThat;
 import org.junit.Rule;
+import org.junit.Test;
 import org.jvnet.hudson.test.JenkinsRule;
 import org.jvnet.hudson.test.JenkinsSessionRule;
 import org.jvnet.hudson.test.MockAuthorizationStrategy;
@@ -53,7 +58,7 @@ public class IdTokenCredentialsTest {
         AtomicReference<BigInteger> modulus = new AtomicReference<>();
         rr.then(r -> {
             IdTokenStringCredentials c = new IdTokenStringCredentials(CredentialsScope.GLOBAL, "test", null,
-                SignatureAlgorithm.RS256.name());
+                SupportedKeyAlgorithms.RS256);
             c.setIssuer("https://issuer");
             c.setAudience("https://audience");
             CredentialsProvider.lookupStores(r.jenkins).iterator().next().addCredentials(Domain.global(), c);
@@ -85,11 +90,11 @@ public class IdTokenCredentialsTest {
 
     @Test public void checkIssuer() throws Throwable {
         rr.then(r -> {
-            IdTokenStringCredentials c = new IdTokenStringCredentials(CredentialsScope.GLOBAL, "ext1", null, SignatureAlgorithm.RS256.name());
+            IdTokenStringCredentials c = new IdTokenStringCredentials(CredentialsScope.GLOBAL, "ext1", null, SupportedKeyAlgorithms.RS256);
             c.setIssuer("https://xxx");
             CredentialsProvider.lookupStores(r.jenkins).iterator().next().addCredentials(Domain.global(), c);
             Folder dir = r.createProject(Folder.class, "dir");
-            c = new IdTokenStringCredentials(CredentialsScope.GLOBAL, "ext2", null, SignatureAlgorithm.RS256.getDescription());
+            c = new IdTokenStringCredentials(CredentialsScope.GLOBAL, "ext2", null, SupportedKeyAlgorithms.RS256);
             c.setIssuer("https://xxx");
             CredentialsProvider.lookupStores(dir).iterator().next().addCredentials(Domain.global(), c);
             r.jenkins.setSecurityRealm(r.createDummySecurityRealm());
