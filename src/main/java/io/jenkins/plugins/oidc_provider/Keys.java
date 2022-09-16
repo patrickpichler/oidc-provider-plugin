@@ -65,10 +65,6 @@ import org.kohsuke.stapler.StaplerRequest;
     static final String WELL_KNOWN_OPENID_CONFIGURATION = "/.well-known/openid-configuration";
     static final String JWKS = "/jwks";
 
-    public static Secret serializePrivateKey(KeyPair kp) {
-        return Secret.fromString(Base64.getEncoder().encodeToString(kp.getPrivate().getEncoded()));
-    }
-
     @Override public String getUrlName() {
         return URL_NAME;
     }
@@ -174,7 +170,7 @@ import org.kohsuke.stapler.StaplerRequest;
         return new JSONObject().
             accumulate("kid", keyId).
             accumulate("kty", "RSA").
-            accumulate("alg", "RS256").
+            accumulate("alg", algorithm.name()).
             accumulate("use", "sig").
             accumulate("n", encoder.encodeToString(key.getModulus().toByteArray())).
             accumulate("e", encoder.encodeToString(key.getPublicExponent().toByteArray()));
