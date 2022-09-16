@@ -176,7 +176,7 @@ import org.kohsuke.stapler.StaplerRequest;
             accumulate("e", encoder.encodeToString(key.getPublicExponent().toByteArray()));
     }
 
-    public static enum SupportedKeyAlgorithm {
+    public enum SupportedKeyAlgorithm {
         ES256(SignatureAlgorithm.ES256, "P-256"),
         ES384(SignatureAlgorithm.ES384, "P-384"),
         ES512(SignatureAlgorithm.ES512, "P-521"),
