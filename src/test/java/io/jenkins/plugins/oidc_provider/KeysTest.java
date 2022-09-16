@@ -29,6 +29,7 @@ import com.cloudbees.plugins.credentials.CredentialsScope;
 import com.cloudbees.plugins.credentials.CredentialsStore;
 import com.cloudbees.plugins.credentials.domains.Domain;
 import com.gargoylesoftware.htmlunit.Page;
+import io.jsonwebtoken.SignatureAlgorithm;
 import java.net.URL;
 import java.util.logging.Level;
 import jenkins.model.Jenkins;
@@ -50,8 +51,9 @@ public class KeysTest {
         r.jenkins.setSecurityRealm(r.createDummySecurityRealm());
         r.jenkins.setAuthorizationStrategy(new MockAuthorizationStrategy().grant(Jenkins.ADMINISTER).everywhere().toAuthenticated());
         CredentialsStore store = CredentialsProvider.lookupStores(r.jenkins).iterator().next();
-        store.addCredentials(Domain.global(), new IdTokenStringCredentials(CredentialsScope.GLOBAL, "global", null));
-        IdTokenStringCredentials alt = new IdTokenStringCredentials(CredentialsScope.GLOBAL, "alt", null);
+        store.addCredentials(Domain.global(), new IdTokenStringCredentials(CredentialsScope.GLOBAL, "global", null,
+            SignatureAlgorithm.RS256.name()));
+        IdTokenStringCredentials alt = new IdTokenStringCredentials(CredentialsScope.GLOBAL, "alt", null, SignatureAlgorithm.RS256.name());
         alt.setIssuer("https://elsewhere");
         store.addCredentials(Domain.global(), alt);
         JSONObject config = r.getJSON("oidc/.well-known/openid-configuration").getJSONObject();

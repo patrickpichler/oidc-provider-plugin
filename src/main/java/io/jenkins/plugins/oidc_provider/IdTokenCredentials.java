@@ -29,29 +29,23 @@ import com.cloudbees.plugins.credentials.CredentialsScope;
 import com.cloudbees.plugins.credentials.impl.BaseStandardCredentials;
 import edu.umd.cs.findbugs.annotations.CheckForNull;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import hudson.DescriptorExtensionList;
-import hudson.Extension;
 import hudson.ExtensionList;
 import hudson.Util;
-import hudson.model.Descriptor;
 import hudson.model.ModelObject;
 import hudson.model.Run;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 import hudson.util.ListBoxModel.Option;
 import hudson.util.Secret;
-import io.jenkins.plugins.oidc_provider.keys.KeyType;
 import io.jsonwebtoken.JwtBuilder;
 import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureAlgorithm;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.KeyFactory;
 import java.security.KeyPair;
-import java.security.KeyPairGenerator;
-import java.security.NoSuchAlgorithmException;
 import java.security.interfaces.RSAPrivateCrtKey;
 import java.security.interfaces.RSAPublicKey;
-import java.security.spec.ECGenParameterSpec;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.RSAPublicKeySpec;
 import java.time.temporal.ChronoUnit;
@@ -77,7 +71,8 @@ public abstract class IdTokenCredentials extends BaseStandardCredentials {
     private transient KeyPair kp;
 
     /**
-     * Encrypted {@link Base64} encoding of RSA private key in {@link RSAPrivateCrtKey} / {@link PKCS8EncodedKeySpec} format.
+     * Encrypted {@link Base64} encoding of RSA private key in {@link RSAPrivateCrtKey} / {@link PKCS8EncodedKeySpec}
+     * format.
      * The public key is inferred from this to reload {@link #kp}.
      */
     private final Secret privateKey;
@@ -88,27 +83,24 @@ public abstract class IdTokenCredentials extends BaseStandardCredentials {
 
     private transient @CheckForNull Run<?, ?> build;
 
+    private @CheckForNull String algorithm;
+
     protected IdTokenCredentials(CredentialsScope scope, String id, String description) {
-        this(scope, id, description, generatePrivateKey());
+        this(scope, id, description, SignatureAlgorithm.RS256.name());
     }
 
-    public DescriptorExtensionList<KeyType, Descriptor<KeyType>> getKeyTypeDescriptors(){
-        return Jenkins.get().getDescriptorList(KeyType.class);
+    protected IdTokenCredentials(CredentialsScope scope, String id, String description, String algorithm) {
+        this(scope, id, description, generatePrivateKey(algorithm), algorithm);
     }
 
-    private static KeyPair generatePrivateKey() {
-        KeyPairGenerator gen;
-        try {
-            gen = KeyPairGenerator.getInstance("RSA");
-        } catch (NoSuchAlgorithmException x) {
-            throw new AssertionError(x);
-        }
-        gen.initialize(2048);
-        return gen.generateKeyPair();
+    private static KeyPair generatePrivateKey(String algorithm) {
+        SignatureAlgorithm signatureAlgorithm = SignatureAlgorithm.forName(algorithm);
+
+        return io.jsonwebtoken.security.Keys.keyPairFor(signatureAlgorithm);
     }
 
-    private IdTokenCredentials(CredentialsScope scope, String id, String description, KeyPair kp) {
-        this(scope, id, description, kp, serializePrivateKey(kp));
+    private IdTokenCredentials(CredentialsScope scope, String id, String description, KeyPair kp, String algorithm) {
+        this(scope, id, description, kp, serializePrivateKey(kp), algorithm);
     }
 
     private static Secret serializePrivateKey(KeyPair kp) {
@@ -116,16 +108,21 @@ public abstract class IdTokenCredentials extends BaseStandardCredentials {
         return Secret.fromString(Base64.getEncoder().encodeToString(kp.getPrivate().getEncoded()));
     }
 
-    protected IdTokenCredentials(CredentialsScope scope, String id, String description, KeyPair kp, Secret privateKey) {
+    protected IdTokenCredentials(CredentialsScope scope, String id, String description, KeyPair kp, Secret privateKey,
+        String algorithm) {
         super(scope, id, description);
         this.kp = kp;
         this.privateKey = privateKey;
+        this.algorithm = algorithm;
     }
 
     protected Object readResolve() throws Exception {
         KeyFactory kf = KeyFactory.getInstance("RSA");
-        RSAPrivateCrtKey priv = (RSAPrivateCrtKey) kf.generatePrivate(new PKCS8EncodedKeySpec(Base64.getDecoder().decode(privateKey.getPlainText())));
+
+        RSAPrivateCrtKey priv = (RSAPrivateCrtKey) kf.generatePrivate(
+            new PKCS8EncodedKeySpec(Base64.getDecoder().decode(privateKey.getPlainText())));
         kp = new KeyPair(kf.generatePublic(new RSAPublicKeySpec(priv.getModulus(), priv.getPublicExponent())), priv);
+        algorithm = SignatureAlgorithm.RS256.name();
         return this;
     }
 
@@ -145,10 +142,18 @@ public abstract class IdTokenCredentials extends BaseStandardCredentials {
         this.audience = Util.fixEmpty(audience);
     }
 
-    protected abstract IdTokenCredentials clone(KeyPair kp, Secret privateKey);
+    @DataBoundSetter public void setAlgorithm(String algorithm) {
+        this.algorithm = algorithm;
+    }
+
+    public String getAlgorithm() {
+        return algorithm;
+    }
+
+    protected abstract IdTokenCredentials clone(KeyPair kp, Secret privateKey, String algorithm);
 
     @Override public final Credentials forRun(Run<?, ?> context) {
-        IdTokenCredentials clone = clone(kp, privateKey);
+        IdTokenCredentials clone = clone(kp, privateKey, algorithm);
         clone.issuer = issuer;
         clone.audience = audience;
         clone.build = context;
@@ -266,14 +271,15 @@ public abstract class IdTokenCredentials extends BaseStandardCredentials {
             return new JSONObject().accumulate("keys", new JSONArray().element(Keys.key(c)));
         }
 
-        public ListBoxModel doFillKeyTypeItems(ModelObject context) {
+        public ListBoxModel doFillAlgorithmItems() {
             return new ListBoxModel(
-                new Option("RSA")
+                new Option(SignatureAlgorithm.ES256.name()),
+                new Option(SignatureAlgorithm.ES384.name()),
+                new Option(SignatureAlgorithm.ES512.name()),
+                new Option(SignatureAlgorithm.RS256.name()),
+                new Option(SignatureAlgorithm.RS384.name()),
+                new Option(SignatureAlgorithm.RS512.name())
             );
-
         }
     }
-
-    public static class KeyTypeDescriptor extends Descriptor<KeyType> {}
-
 }

@@ -26,6 +26,9 @@ package io.jenkins.plugins.oidc_provider;
 
 import com.cloudbees.plugins.credentials.CredentialsScope;
 import hudson.Extension;
+import hudson.model.ModelObject;
+import hudson.util.ListBoxModel;
+import hudson.util.ListBoxModel.Option;
 import hudson.util.Secret;
 import java.security.KeyPair;
 import org.jenkinsci.Symbol;
@@ -39,20 +42,20 @@ public final class IdTokenStringCredentials extends IdTokenCredentials implement
 
     private static final long serialVersionUID = 1;
 
-    @DataBoundConstructor public IdTokenStringCredentials(CredentialsScope scope, String id, String description) {
-        super(scope, id, description);
+    @DataBoundConstructor public IdTokenStringCredentials(CredentialsScope scope, String id, String description, String algorithm) {
+        super(scope, id, description, algorithm);
     }
 
-    private IdTokenStringCredentials(CredentialsScope scope, String id, String description, KeyPair kp, Secret privateKey) {
-        super(scope, id, description, kp, privateKey);
+    private IdTokenStringCredentials(CredentialsScope scope, String id, String description, KeyPair kp, Secret privateKey, String algorithm) {
+        super(scope, id, description, kp, privateKey, algorithm);
     }
 
     @Override public Secret getSecret() {
         return Secret.fromString(token());
     }
 
-    @Override protected IdTokenCredentials clone(KeyPair kp, Secret privateKey) {
-        return new IdTokenStringCredentials(getScope(), getId(), getDescription(), kp, privateKey);
+    @Override protected IdTokenCredentials clone(KeyPair kp, Secret privateKey, String algorithm) {
+        return new IdTokenStringCredentials(getScope(), getId(), getDescription(), kp, privateKey, algorithm);
     }
 
     @Symbol("idToken")

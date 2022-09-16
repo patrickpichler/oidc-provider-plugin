@@ -29,6 +29,7 @@ import com.cloudbees.plugins.credentials.CredentialsScope;
 import com.cloudbees.plugins.credentials.domains.Domain;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureAlgorithm;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
@@ -47,7 +48,8 @@ public class IdTokenStringCredentialsTest {
     @Rule public JenkinsRule r = new JenkinsRule();
 
     @Test public void smokes() throws Exception {
-        IdTokenStringCredentials c = new IdTokenStringCredentials(CredentialsScope.GLOBAL, "test", null);
+        IdTokenStringCredentials c = new IdTokenStringCredentials(CredentialsScope.GLOBAL, "test", null,
+            SignatureAlgorithm.RS256.name());
         c.setAudience("https://service/");
         CredentialsProvider.lookupStores(r.jenkins).iterator().next().addCredentials(Domain.global(), c);
         WorkflowJob p = r.createProject(WorkflowJob.class, "p");
@@ -72,7 +74,7 @@ public class IdTokenStringCredentialsTest {
     }
 
     @Test public void declarative() throws Exception {
-        IdTokenStringCredentials c = new IdTokenStringCredentials(CredentialsScope.GLOBAL, "test", null);
+        IdTokenStringCredentials c = new IdTokenStringCredentials(CredentialsScope.GLOBAL, "test", null, SignatureAlgorithm.RS256.name());
         c.setAudience("https://service/");
         CredentialsProvider.lookupStores(r.jenkins).iterator().next().addCredentials(Domain.global(), c);
         WorkflowJob p = r.createProject(WorkflowJob.class, "p");
@@ -101,7 +103,7 @@ public class IdTokenStringCredentialsTest {
     }
 
     @Test public void alternateIssuer() throws Exception {
-        IdTokenStringCredentials c = new IdTokenStringCredentials(CredentialsScope.GLOBAL, "test", null);
+        IdTokenStringCredentials c = new IdTokenStringCredentials(CredentialsScope.GLOBAL, "test", null, SignatureAlgorithm.RS256.name());
         c.setIssuer("https://some.issuer");
         CredentialsProvider.lookupStores(r.jenkins).iterator().next().addCredentials(Domain.global(), c);
         WorkflowJob p = r.createProject(WorkflowJob.class, "p");

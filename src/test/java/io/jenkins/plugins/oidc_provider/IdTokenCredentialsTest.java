@@ -31,6 +31,7 @@ import com.cloudbees.plugins.credentials.domains.Domain;
 import com.gargoylesoftware.htmlunit.html.HtmlAnchor;
 import com.gargoylesoftware.htmlunit.html.HtmlForm;
 import com.gargoylesoftware.htmlunit.html.HtmlPage;
+import io.jsonwebtoken.SignatureAlgorithm;
 import java.math.BigInteger;
 import java.util.Collections;
 import java.util.List;
@@ -51,7 +52,8 @@ public class IdTokenCredentialsTest {
     @Test public void persistence() throws Throwable {
         AtomicReference<BigInteger> modulus = new AtomicReference<>();
         rr.then(r -> {
-            IdTokenStringCredentials c = new IdTokenStringCredentials(CredentialsScope.GLOBAL, "test", null);
+            IdTokenStringCredentials c = new IdTokenStringCredentials(CredentialsScope.GLOBAL, "test", null,
+                SignatureAlgorithm.RS256.name());
             c.setIssuer("https://issuer");
             c.setAudience("https://audience");
             CredentialsProvider.lookupStores(r.jenkins).iterator().next().addCredentials(Domain.global(), c);
@@ -83,11 +85,11 @@ public class IdTokenCredentialsTest {
 
     @Test public void checkIssuer() throws Throwable {
         rr.then(r -> {
-            IdTokenStringCredentials c = new IdTokenStringCredentials(CredentialsScope.GLOBAL, "ext1", null);
+            IdTokenStringCredentials c = new IdTokenStringCredentials(CredentialsScope.GLOBAL, "ext1", null, SignatureAlgorithm.RS256.name());
             c.setIssuer("https://xxx");
             CredentialsProvider.lookupStores(r.jenkins).iterator().next().addCredentials(Domain.global(), c);
             Folder dir = r.createProject(Folder.class, "dir");
-            c = new IdTokenStringCredentials(CredentialsScope.GLOBAL, "ext2", null);
+            c = new IdTokenStringCredentials(CredentialsScope.GLOBAL, "ext2", null, SignatureAlgorithm.RS256.getDescription());
             c.setIssuer("https://xxx");
             CredentialsProvider.lookupStores(dir).iterator().next().addCredentials(Domain.global(), c);
             r.jenkins.setSecurityRealm(r.createDummySecurityRealm());

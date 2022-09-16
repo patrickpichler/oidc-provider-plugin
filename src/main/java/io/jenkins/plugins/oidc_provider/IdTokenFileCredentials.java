@@ -43,12 +43,12 @@ public final class IdTokenFileCredentials extends IdTokenCredentials implements 
 
     private static final long serialVersionUID = 1;
 
-    @DataBoundConstructor public IdTokenFileCredentials(CredentialsScope scope, String id, String description) {
-        super(scope, id, description);
+    @DataBoundConstructor public IdTokenFileCredentials(CredentialsScope scope, String id, String description, String algorithm) {
+        super(scope, id, description, algorithm);
     }
 
-    private IdTokenFileCredentials(CredentialsScope scope, String id, String description, KeyPair kp, Secret privateKey) {
-        super(scope, id, description, kp, privateKey);
+    private IdTokenFileCredentials(CredentialsScope scope, String id, String description, KeyPair kp, Secret privateKey, String algorithm) {
+        super(scope, id, description, kp, privateKey, algorithm);
     }
 
     @Override public String getFileName() {
@@ -59,8 +59,8 @@ public final class IdTokenFileCredentials extends IdTokenCredentials implements 
         return new ByteArrayInputStream(token().getBytes(StandardCharsets.UTF_8));
     }
 
-    @Override protected IdTokenCredentials clone(KeyPair kp, Secret privateKey) {
-        return new IdTokenFileCredentials(getScope(), getId(), getDescription(), kp, privateKey);
+    @Override protected IdTokenCredentials clone(KeyPair kp, Secret privateKey, String algorithm) {
+        return new IdTokenFileCredentials(getScope(), getId(), getDescription(), kp, privateKey, algorithm);
     }
 
     @Symbol("idTokenFile")

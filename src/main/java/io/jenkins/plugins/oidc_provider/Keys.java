@@ -31,6 +31,7 @@ import hudson.model.InvisibleAction;
 import hudson.model.UnprotectedRootAction;
 import hudson.security.ACL;
 import hudson.security.ACLContext;
+import io.jsonwebtoken.SignatureAlgorithm;
 import java.security.interfaces.RSAPublicKey;
 import java.util.Base64;
 import java.util.logging.Logger;
@@ -132,4 +133,16 @@ import org.kohsuke.stapler.StaplerRequest;
         return null;
     }
 
+    public static enum SupportedKeyAlgorithms {
+        ES256(SignatureAlgorithm.ES256),
+        ES384(SignatureAlgorithm.ES384),
+        ES512(SignatureAlgorithm.ES512),
+        RS256(SignatureAlgorithm.RS256),
+        RS384(SignatureAlgorithm.RS384),
+        RS512(SignatureAlgorithm.RS512);
+
+        private final SignatureAlgorithm algorithm;
+
+        SupportedKeyAlgorithms(SignatureAlgorithm algorithm) {this.algorithm = algorithm;}
+    }
 }
