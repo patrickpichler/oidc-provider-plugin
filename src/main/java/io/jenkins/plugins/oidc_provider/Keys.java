@@ -96,13 +96,18 @@ import org.kohsuke.stapler.StaplerRequest;
     }
 
     static JSONObject openidConfiguration(String issuer) {
-        // TODO search for matching IdTokenCredential to display correct signing alg values
+        JSONArray algValuesSupported = new JSONArray();
+
+        for (SupportedKeyAlgorithm value : SupportedKeyAlgorithm.values()) {
+            algValuesSupported.element(value.name());
+        }
+
         return new JSONObject().
             accumulate("issuer", issuer).
             accumulate("jwks_uri", issuer + JWKS).
             accumulate("response_types_supported", new JSONArray().element("code")).
             accumulate("subject_types_supported", new JSONArray().element("public")).
-            accumulate("id_token_signing_alg_values_supported", new JSONArray().element("RS256")).
+            accumulate("id_token_signing_alg_values_supported", algValuesSupported).
             accumulate("authorization_endpoint", "https://unimplemented").
             accumulate("token_endpoint", "https://unimplemented");
     }
