@@ -51,6 +51,7 @@ import java.security.interfaces.RSAPublicKey;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.RSAPublicKeySpec;
 import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.Date;
 import java.util.Objects;
@@ -76,8 +77,11 @@ public abstract class IdTokenCredentials extends BaseStandardCredentials {
      * Encrypted {@link Base64} encoding of private key in {@link RSAPrivateCrtKey} / {@link PKCS8EncodedKeySpec}
      * format.
      * The public key is inferred from this to reload {@link #kp}.
+     * <br/>
+     * The field has been replaced by {@link #secretKeyPair} and only stays around for
+     * compatibility reasons.
      */
-    private transient Secret privateKey;
+    @Deprecated private transient Secret privateKey;
 
     private final SecretKeyPair secretKeyPair;
 
@@ -139,13 +143,11 @@ public abstract class IdTokenCredentials extends BaseStandardCredentials {
         return audience;
     }
 
-    @DataBoundSetter
-    public final void setAudience(String audience) {
+    @DataBoundSetter public final void setAudience(String audience) {
         this.audience = Util.fixEmpty(audience);
     }
 
-    @DataBoundSetter
-    public void setAlgorithm(SupportedKeyAlgorithm algorithm) {
+    @DataBoundSetter public void setAlgorithm(SupportedKeyAlgorithm algorithm) {
         this.algorithm = algorithm;
     }
 
@@ -155,8 +157,7 @@ public abstract class IdTokenCredentials extends BaseStandardCredentials {
 
     protected abstract IdTokenCredentials clone(KeyPair kp, SupportedKeyAlgorithm algorithm, SecretKeyPair secretKeyPair);
 
-    @Override
-    public final Credentials forRun(Run<?, ?> context) {
+    @Override public final Credentials forRun(Run<?, ?> context) {
         IdTokenCredentials clone = clone(kp, algorithm, secretKeyPair);
         clone.issuer = issuer;
         clone.audience = audience;
@@ -277,12 +278,9 @@ public abstract class IdTokenCredentials extends BaseStandardCredentials {
 
         public ListBoxModel doFillAlgorithmItems() {
             return new ListBoxModel(
-                new Option(SignatureAlgorithm.ES256.name()),
-                new Option(SignatureAlgorithm.ES384.name()),
-                new Option(SignatureAlgorithm.ES512.name()),
-                new Option(SignatureAlgorithm.RS256.name()),
-                new Option(SignatureAlgorithm.RS384.name()),
-                new Option(SignatureAlgorithm.RS512.name())
+                Arrays.stream(SignatureAlgorithm.values())
+                    .map(a -> new Option(a.name()))
+                    .toArray(Option[]::new)
             );
         }
     }

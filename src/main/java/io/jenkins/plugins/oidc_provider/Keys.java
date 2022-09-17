@@ -39,10 +39,8 @@ import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.interfaces.ECPublicKey;
-import java.security.interfaces.RSAPrivateCrtKey;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.PKCS8EncodedKeySpec;
-import java.security.spec.RSAPublicKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
 import java.util.Base64.Encoder;
@@ -115,12 +113,11 @@ import org.kohsuke.stapler.StaplerRequest;
     static JSONObject key(IdTokenCredentials creds) {
         SupportedKeyAlgorithm algorithm = creds.getAlgorithm();
 
-        if (algorithm.isRsa()) {
-            return encodeRsaJsonWebKey(algorithm, creds.getId(), (RSAPublicKey) creds.publicKey());
-        }
-
-        if (algorithm.isEllipticCurve()) {
-            return encodeECJsonWebKey(algorithm, creds.getId(), (ECPublicKey) creds.publicKey());
+        switch (algorithm.getType()) {
+            case RSA:
+                return encodeRsaJsonWebKey(algorithm, creds.getId(), (RSAPublicKey) creds.publicKey());
+            case ELLIPTIC_CURVE:
+                return encodeECJsonWebKey(algorithm, creds.getId(), (ECPublicKey) creds.publicKey());
         }
 
         throw new IllegalArgumentException("Cannot encode creds with algorithm " + algorithm.name());
@@ -181,42 +178,52 @@ import org.kohsuke.stapler.StaplerRequest;
             accumulate("e", encoder.encodeToString(key.getPublicExponent().toByteArray()));
     }
 
+    public enum AlgorithmType {
+        RSA, ELLIPTIC_CURVE
+    }
+
     public enum SupportedKeyAlgorithm {
-        ES256(SignatureAlgorithm.ES256, "P-256"),
-        ES384(SignatureAlgorithm.ES384, "P-384"),
-        ES512(SignatureAlgorithm.ES512, "P-521"),
-        RS256(SignatureAlgorithm.RS256),
-        RS384(SignatureAlgorithm.RS384),
-        RS512(SignatureAlgorithm.RS512);
+        ES256(SignatureAlgorithm.ES256, "P-256", AlgorithmType.ELLIPTIC_CURVE),
+        ES384(SignatureAlgorithm.ES384, "P-384", AlgorithmType.ELLIPTIC_CURVE),
+        ES512(SignatureAlgorithm.ES512, "P-521", AlgorithmType.ELLIPTIC_CURVE),
+        RS256(SignatureAlgorithm.RS256, AlgorithmType.RSA),
+        RS384(SignatureAlgorithm.RS384, AlgorithmType.RSA),
+        RS512(SignatureAlgorithm.RS512, AlgorithmType.RSA);
 
         private final SignatureAlgorithm algorithm;
         private final String curve;
+        private final AlgorithmType type;
 
-        SupportedKeyAlgorithm(SignatureAlgorithm algorithm) {
-            this(algorithm, null);
+        SupportedKeyAlgorithm(SignatureAlgorithm algorithm, AlgorithmType type) {
+            this(algorithm, null, type);
         }
 
-        SupportedKeyAlgorithm(SignatureAlgorithm algorithm, String curve) {
+        SupportedKeyAlgorithm(SignatureAlgorithm algorithm, String curve, AlgorithmType type) {
             this.algorithm = algorithm;
             this.curve = curve;
+            this.type = type;
         }
 
         public KeyPair generateKeyPair() {
             return io.jsonwebtoken.security.Keys.keyPairFor(algorithm);
         }
 
-        public boolean isRsa() {
-            return algorithm.isRsa();
-        }
-
-        public boolean isEllipticCurve() {
-            return algorithm.isEllipticCurve();
+        public AlgorithmType getType() {
+            return type;
         }
     }
 
     public static class SecretKeyPair implements Serializable {
         private static final long serialVersionUID = 2448941858110252020L;
+
+        /**
+         * Encrypted base64 encoding of a private key in {@link PKCS8EncodedKeySpec}
+         */
         private final Secret privateKey;
+
+        /**
+         * Encrypted base64 encoding of a public key in {@link X509EncodedKeySpec}
+         */
         private final Secret publicKey;
         private final SupportedKeyAlgorithm algorithm;
 
@@ -227,26 +234,26 @@ import org.kohsuke.stapler.StaplerRequest;
         }
 
         public KeyPair toKeyPair() throws Exception {
-            if (this.algorithm.isRsa()) {
-                KeyFactory kf = KeyFactory.getInstance("RSA");
+            KeyFactory keyFactory;
 
-                RSAPrivateCrtKey priv = (RSAPrivateCrtKey) kf.generatePrivate(
-                    new PKCS8EncodedKeySpec(Base64.getDecoder().decode(privateKey.getPlainText())));
-                return new KeyPair(kf.generatePublic(new RSAPublicKeySpec(priv.getModulus(), priv.getPublicExponent())),
-                    priv);
-            } else if (this.algorithm.isEllipticCurve()){
-                KeyFactory kf = KeyFactory.getInstance("EC");
-
-                PrivateKey priv = kf.generatePrivate(
-                    new PKCS8EncodedKeySpec(Base64.getDecoder().decode(privateKey.getPlainText())));
-
-                PublicKey pub = kf.generatePublic(
-                    new X509EncodedKeySpec(Base64.getDecoder().decode(publicKey.getPlainText())));
-
-                return new KeyPair(pub, priv);
+            switch (algorithm.type) {
+                case RSA:
+                    keyFactory = KeyFactory.getInstance("RSA");
+                    break;
+                case ELLIPTIC_CURVE:
+                    keyFactory = KeyFactory.getInstance("EC");
+                    break;
+                default:
+                    throw new RuntimeException("Cannot restore keypair from " + this.algorithm.name() + " algorithm");
             }
 
-            throw new RuntimeException("Cannot restore keypair from " + this.algorithm.name() + " algorithm");
+            PrivateKey priv = keyFactory.generatePrivate(
+                new PKCS8EncodedKeySpec(Base64.getDecoder().decode(privateKey.getPlainText())));
+
+            PublicKey pub = keyFactory.generatePublic(
+                new X509EncodedKeySpec(Base64.getDecoder().decode(publicKey.getPlainText())));
+
+            return new KeyPair(pub, priv);
         }
 
         public static SecretKeyPair fromKeyPair(SupportedKeyAlgorithm algorithm, KeyPair keyPair) {
