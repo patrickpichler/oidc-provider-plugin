@@ -276,7 +276,7 @@ public abstract class IdTokenCredentials extends BaseStandardCredentials {
 
         public ListBoxModel doFillAlgorithmItems() {
             return new ListBoxModel(
-                Arrays.stream(SignatureAlgorithm.values())
+                Arrays.stream(SupportedKeyAlgorithm.values())
                     .map(a -> new Option(a.name()))
                     .toArray(Option[]::new)
             );
