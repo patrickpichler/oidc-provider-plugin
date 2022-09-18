@@ -191,6 +191,9 @@ import org.kohsuke.stapler.StaplerRequest;
         RSA, ELLIPTIC_CURVE
     }
 
+    /**
+     * Enum representing all key algorithms supported by this plugin.
+     */
     public enum SupportedKeyAlgorithm {
         RS256(SignatureAlgorithm.RS256, AlgorithmType.RSA),
         RS384(SignatureAlgorithm.RS384, AlgorithmType.RSA),
@@ -198,9 +201,17 @@ import org.kohsuke.stapler.StaplerRequest;
 
         ES256(SignatureAlgorithm.ES256, "P-256", AlgorithmType.ELLIPTIC_CURVE),
         ES384(SignatureAlgorithm.ES384, "P-384", AlgorithmType.ELLIPTIC_CURVE),
-        ES512(SignatureAlgorithm.ES512, "P-521", AlgorithmType.ELLIPTIC_CURVE),;
+        ES512(SignatureAlgorithm.ES512, "P-521", AlgorithmType.ELLIPTIC_CURVE),
+        ;
 
         private final SignatureAlgorithm algorithm;
+
+        /**
+         * If the given key algorithm is of type {@link AlgorithmType#ELLIPTIC_CURVE}, this variable holds
+         * the name of the curved used.
+         *
+         * For algorithms of type RSA, the value will be null.
+         */
         private final String curve;
         private final AlgorithmType type;
 
