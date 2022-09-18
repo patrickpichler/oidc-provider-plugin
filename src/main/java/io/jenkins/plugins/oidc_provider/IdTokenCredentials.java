@@ -81,7 +81,7 @@ public abstract class IdTokenCredentials extends BaseStandardCredentials {
      */
     @Deprecated private transient Secret privateKey;
 
-    private final SecretKeyPair secretKeyPair;
+    private SecretKeyPair secretKeyPair;
 
     private @CheckForNull String issuer;
 
@@ -120,6 +120,7 @@ public abstract class IdTokenCredentials extends BaseStandardCredentials {
             kp = new KeyPair(kf.generatePublic(new RSAPublicKeySpec(priv.getModulus(), priv.getPublicExponent())),
                 priv);
             algorithm = SupportedKeyAlgorithm.RS256;
+            secretKeyPair = SecretKeyPair.fromKeyPair(algorithm, kp);
 
             return this;
         }
