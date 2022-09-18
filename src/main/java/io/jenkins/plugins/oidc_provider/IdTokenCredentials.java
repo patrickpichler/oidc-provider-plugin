@@ -39,7 +39,6 @@ import hudson.util.Secret;
 import io.jenkins.plugins.oidc_provider.Keys.SupportedKeyAlgorithm;
 import io.jsonwebtoken.JwtBuilder;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.KeyFactory;
@@ -89,7 +88,7 @@ public abstract class IdTokenCredentials extends BaseStandardCredentials {
 
     private transient @CheckForNull Run<?, ?> build;
 
-    private @CheckForNull SupportedKeyAlgorithm algorithm;
+    private @NonNull SupportedKeyAlgorithm algorithm;
 
     protected IdTokenCredentials(CredentialsScope scope, String id, String description,
         SupportedKeyAlgorithm algorithm) {
@@ -104,6 +103,11 @@ public abstract class IdTokenCredentials extends BaseStandardCredentials {
     protected IdTokenCredentials(CredentialsScope scope, String id, String description, KeyPair kp,
         SupportedKeyAlgorithm algorithm, SecretKeyPair secretKeyPair) {
         super(scope, id, description);
+
+        Objects.requireNonNull(kp);
+        Objects.requireNonNull(algorithm);
+        Objects.requireNonNull(secretKeyPair);
+
         this.kp = kp;
         this.algorithm = algorithm;
         this.secretKeyPair = secretKeyPair;
@@ -147,10 +151,11 @@ public abstract class IdTokenCredentials extends BaseStandardCredentials {
     }
 
     @DataBoundSetter public void setAlgorithm(SupportedKeyAlgorithm algorithm) {
+        Objects.requireNonNull(algorithm);
         this.algorithm = algorithm;
     }
 
-    public SupportedKeyAlgorithm getAlgorithm() {
+    @NonNull public SupportedKeyAlgorithm getAlgorithm() {
         return algorithm;
     }
 

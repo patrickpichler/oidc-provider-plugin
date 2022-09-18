@@ -74,15 +74,4 @@ public class KeysTest {
         assertEquals("RS256", key.getString("alg"));
         assertEquals("sig", key.getString("use"));
     }
-
-    @Test public void restoreECKeyPair() throws Exception {
-        SupportedKeyAlgorithm algorithm = SupportedKeyAlgorithm.ES512;
-        KeyPair kp = algorithm.generateKeyPair();
-
-        SecretKeyPair secretKeyPair = SecretKeyPair.fromKeyPair(algorithm, kp);
-        KeyPair parsedKp = secretKeyPair.toKeyPair();
-
-        assertArrayEquals(kp.getPrivate().getEncoded(), parsedKp.getPrivate().getEncoded());
-        assertArrayEquals(kp.getPublic().getEncoded(), parsedKp.getPublic().getEncoded());
-    }
 }

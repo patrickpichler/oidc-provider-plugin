@@ -44,6 +44,7 @@ import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
 import java.util.Base64.Encoder;
+import java.util.Objects;
 import java.util.logging.Logger;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
@@ -120,7 +121,7 @@ import org.kohsuke.stapler.StaplerRequest;
                 return encodeECJsonWebKey(algorithm, creds.getId(), (ECPublicKey) creds.publicKey());
         }
 
-        throw new IllegalArgumentException("Cannot encode creds with algorithm " + algorithm.name());
+        throw new IllegalArgumentException("Bug! Given algorithm is neither RSA nor elliptic curve! Algorithm: " + algorithm.name());
     }
 
     /**
@@ -152,22 +153,30 @@ import org.kohsuke.stapler.StaplerRequest;
     }
 
     public static JSONObject encodeECJsonWebKey(SupportedKeyAlgorithm algorithm, String keyId, ECPublicKey publicKey) {
+        Objects.requireNonNull(algorithm);
+        Objects.requireNonNull(keyId);
+        Objects.requireNonNull(publicKey);
+
         Encoder encoder = Base64.getEncoder();
 
         String x = encoder.encodeToString(publicKey.getW().getAffineX().toByteArray());
         String y = encoder.encodeToString(publicKey.getW().getAffineY().toByteArray());
 
         return new JSONObject()
-            .accumulate("alg", algorithm.name())
-            .accumulate("kty", "EC")
-            .accumulate("use", "sig")
             .accumulate("kid", keyId)
+            .accumulate("kty", "EC")
+            .accumulate("alg", algorithm.name())
+            .accumulate("use", "sig")
             .accumulate("crv", algorithm.curve)
             .accumulate("x", x)
             .accumulate("y", y);
     }
 
     public static JSONObject encodeRsaJsonWebKey(SupportedKeyAlgorithm algorithm, String keyId, RSAPublicKey key) {
+        Objects.requireNonNull(algorithm);
+        Objects.requireNonNull(keyId);
+        Objects.requireNonNull(key);
+
         Base64.Encoder encoder = Base64.getUrlEncoder().withoutPadding();
         return new JSONObject().
             accumulate("kid", keyId).
@@ -199,6 +208,13 @@ import org.kohsuke.stapler.StaplerRequest;
         }
 
         SupportedKeyAlgorithm(SignatureAlgorithm algorithm, String curve, AlgorithmType type) {
+            Objects.requireNonNull(algorithm);
+            Objects.requireNonNull(type);
+
+            if(type == AlgorithmType.ELLIPTIC_CURVE && curve == null) {
+                throw new IllegalArgumentException("Elliptic Curve algorithms must specify curve!");
+            }
+
             this.algorithm = algorithm;
             this.curve = curve;
             this.type = type;
@@ -210,6 +226,10 @@ import org.kohsuke.stapler.StaplerRequest;
 
         public AlgorithmType getType() {
             return type;
+        }
+
+        public String getCurve() {
+            return curve;
         }
     }
 

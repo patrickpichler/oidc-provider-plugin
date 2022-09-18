@@ -13,8 +13,7 @@ public interface SecretKeyPair extends Serializable {
                 return new ECSecretKeyPair(keyPair);
         }
 
-        throw new RuntimeException(
-            "Bug! Given algorithm is neither RSA nor elliptic curve! Algorithm: " + algorithm.name());
+        throw new RuntimeException("Bug! Given algorithm is neither RSA nor elliptic curve! Algorithm: " + algorithm.name());
     }
 
     KeyPair toKeyPair() throws Exception;
