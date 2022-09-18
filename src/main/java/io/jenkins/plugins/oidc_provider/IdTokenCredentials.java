@@ -36,7 +36,6 @@ import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 import hudson.util.ListBoxModel.Option;
 import hudson.util.Secret;
-import io.jenkins.plugins.oidc_provider.Keys.SecretKeyPair;
 import io.jenkins.plugins.oidc_provider.Keys.SupportedKeyAlgorithm;
 import io.jsonwebtoken.JwtBuilder;
 import io.jsonwebtoken.Jwts;
@@ -47,7 +46,6 @@ import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.PublicKey;
 import java.security.interfaces.RSAPrivateCrtKey;
-import java.security.interfaces.RSAPublicKey;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.RSAPublicKeySpec;
 import java.time.temporal.ChronoUnit;
@@ -100,7 +98,7 @@ public abstract class IdTokenCredentials extends BaseStandardCredentials {
 
     private IdTokenCredentials(CredentialsScope scope, String id, String description, KeyPair kp,
         SupportedKeyAlgorithm algorithm) {
-        this(scope, id, description, kp, algorithm, Keys.SecretKeyPair.fromKeyPair(algorithm, kp));
+        this(scope, id, description, kp, algorithm, SecretKeyPair.fromKeyPair(algorithm, kp));
     }
 
     protected IdTokenCredentials(CredentialsScope scope, String id, String description, KeyPair kp,

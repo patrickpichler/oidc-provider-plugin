@@ -29,8 +29,6 @@ import com.cloudbees.plugins.credentials.CredentialsScope;
 import com.cloudbees.plugins.credentials.CredentialsStore;
 import com.cloudbees.plugins.credentials.domains.Domain;
 import com.gargoylesoftware.htmlunit.Page;
-import hudson.util.Secret;
-import io.jenkins.plugins.oidc_provider.Keys.SecretKeyPair;
 import io.jenkins.plugins.oidc_provider.Keys.SupportedKeyAlgorithm;
 import java.net.URL;
 import java.security.KeyPair;

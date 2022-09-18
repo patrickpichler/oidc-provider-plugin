@@ -26,8 +26,6 @@ package io.jenkins.plugins.oidc_provider;
 
 import com.cloudbees.plugins.credentials.CredentialsScope;
 import hudson.Extension;
-import hudson.util.Secret;
-import io.jenkins.plugins.oidc_provider.Keys.SecretKeyPair;
 import io.jenkins.plugins.oidc_provider.Keys.SupportedKeyAlgorithm;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
