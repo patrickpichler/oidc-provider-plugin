@@ -192,12 +192,13 @@ import org.kohsuke.stapler.StaplerRequest;
     }
 
     public enum SupportedKeyAlgorithm {
-        ES256(SignatureAlgorithm.ES256, "P-256", AlgorithmType.ELLIPTIC_CURVE),
-        ES384(SignatureAlgorithm.ES384, "P-384", AlgorithmType.ELLIPTIC_CURVE),
-        ES512(SignatureAlgorithm.ES512, "P-521", AlgorithmType.ELLIPTIC_CURVE),
         RS256(SignatureAlgorithm.RS256, AlgorithmType.RSA),
         RS384(SignatureAlgorithm.RS384, AlgorithmType.RSA),
-        RS512(SignatureAlgorithm.RS512, AlgorithmType.RSA);
+        RS512(SignatureAlgorithm.RS512, AlgorithmType.RSA),
+
+        ES256(SignatureAlgorithm.ES256, "P-256", AlgorithmType.ELLIPTIC_CURVE),
+        ES384(SignatureAlgorithm.ES384, "P-384", AlgorithmType.ELLIPTIC_CURVE),
+        ES512(SignatureAlgorithm.ES512, "P-521", AlgorithmType.ELLIPTIC_CURVE),;
 
         private final SignatureAlgorithm algorithm;
         private final String curve;
